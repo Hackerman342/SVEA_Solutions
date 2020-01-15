@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="ctrl_message_topic"      default="/SVEA0/lli/ctrl_actuated" />
+    <arg name="output_message_topic"    default="/cmd_odom" />
+    <arg name="est_frame_id"            default="base_link" />
+    <arg name="max_speed_gear_1"        default="1.5" />
+    <arg name="max_speed_gear_2"        default="2.5" />
+    <arg name="dead_zone"               default="20" />
+    <arg name="wheel_base"              default=".32" />
+    <arg name="linear_covariance"       default=".015" />
+    <arg name="angular_covariance"      default=".015" />    
+    <arg name="publish_rate"            default="100" />  
+    
+    
+    <node pkg="svea" type="ctrl_bicycle.py" name="ctrl_bicycle" output="screen">
+        <param name="ctrl_message_topic"                    value="$(arg ctrl_message_topic)" />
+        <param name="output_message_topic"                  value="$(arg output_message_topic)" />
+        <param name="est_frame_id"                          value="$(arg est_frame_id)" />
+        <param name="max_speed_gear_1"      type="double"   value="$(arg max_speed_gear_1)" />
+        <param name="max_speed_gear_2"      type="double"   value="$(arg max_speed_gear_2)" />
+        <param name="dead_zone"             type="double"   value="$(arg dead_zone)" />
+        <param name="wheel_base"            type="double"   value="$(arg wheel_base)" />
+        <param name="linear_covariance"     type="double"   value="$(arg linear_covariance)" />
+        <param name="angular_covariance"    type="double"   value="$(arg angular_covariance)" />
+        <param name="publish_rate"          type="double"   value="$(arg publish_rate)" />
+        
+    </node>
+
+</launch>
+

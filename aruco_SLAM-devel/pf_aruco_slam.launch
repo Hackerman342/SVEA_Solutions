@@ -1,0 +1,50 @@
+<launch>
+
+
+
+
+  <!-- Launch necessary background processes -->
+  <!-- <include file="$(find svea)/launch/filtering_project_background.launch" /> -->
+  <!-- Launch necessary background processes -->
+  <!-- <include file="$(find svea_sensors)/launch/lli_ctrl_to_twist.launch" /> -->
+  <!--include file="$(find svea_sensors)/launch/aruco_robot_localization_ekf_external.launch" /-->
+  <!--include file="$(find svea)/launch/aruco_tf.launch" /-->
+
+
+  <!-- -->
+  <arg name="pose_observation_topic"          default="aruco_base_link_pose"/>
+  <arg name="prediction_update_topic"         default="/cmd_odom"/>
+  <arg name="particle_filtered_pose_topic"    default="pf_pose"/>
+  <arg name="particle_count"                  default="5000"/>
+  <arg name="initial_estimate_covariance"     default="1.5"/>
+  <arg name="linear_observation_covariance"   default=".002"/>
+  <arg name="angular_observation_covariance"  default=".001"/>
+  <!-- Should process covariances be omitted and use values from message ??? -->
+  <arg name="linear_process_covariance"       default=".00015"/>
+  <arg name="angular_process_covariance"      default=".0001"/>  
+  <arg name="output"                          default="screen"/>
+
+
+  <!-- <arg name="camera_frame" default="logicam_stat"/>
+  <arg name="fiducial_pose_topic" default="/fiducial_transforms"/>  
+  <arg name="fiducial_id" default="0"/>  
+  <arg name="est_vehicle_frame" default="aruco_base_link"/>
+  <arg name="map_frame" default="map"/>
+  <arg name="lin_cov_aruco" default="0.001"/>
+  <arg name="ang_cov_aruco" default="0.001"/> -->
+   
+
+  <node type="particle_filter_aruco_remote.py" pkg="svea" name="particle_filter_aruco_remote" output="$(arg output)">
+    <param name="pose_observation_topic"                          value="$(arg pose_observation_topic)" />
+    <param name="prediction_update_topic"                         value="$(arg prediction_update_topic)" />
+    <param name="particle_filtered_pose_topic"                    value="$(arg particle_filtered_pose_topic)" />
+    <param name="particle_count"                  type= "int"     value="$(arg particle_count)" />
+    <param name="initial_estimate_covariance"     type= "double"  value="$(arg initial_estimate_covariance)" />
+    <param name="linear_process_covariance"       type= "double"  value="$(arg linear_process_covariance)" />
+    <param name="angular_process_covariance"      type= "double"  value="$(arg angular_process_covariance)" />
+    <param name="linear_observation_covariance"   type= "double"  value="$(arg linear_observation_covariance)" />
+    <param name="angular_observation_covariance"  type= "double"  value="$(arg angular_observation_covariance)" />    
+
+  </node>
+  
+</launch>
