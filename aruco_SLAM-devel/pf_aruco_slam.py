@@ -20,12 +20,12 @@ import tf_conversions
 
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 
 #import geometry_msgs.msg
 #import fiducial_msgs.msg
 #from fiducial_msgs.msg import FiducialTransformArray, FiducialArray
 #from geometry_msgs.msg import Pose, PoseWithCovariance, TransformStamped, PoseStamped 
-#from tf.transformations import quaternion_from_euler, euler_from_quaternion
 
 
 class ArucoParticleFilterRemote():
@@ -144,7 +144,7 @@ class ArucoParticleFilterRemote():
         # Force angles to be on range [-pi, pi]
         self.particles[:,2] = np.remainder(self.particles[:,2]+np.pi,2*np.pi)-np.pi
         # Update old theta for comparison
-        self.old_theta = theta
+        # self.old_theta = theta
 
     # Function for observation update
     def obs_update(self):
@@ -164,6 +164,7 @@ class ArucoParticleFilterRemote():
 
         # Calculate likelihood
         self.likeli = np.exp(-0.5*np.sum(np.square(self.innov).dot(np.linalg.inv(self.ocov_matrix)), axis=1))
+        print(self.likeli)
         #*(1/(2*np.pi*np.sqrt(np.linalg.det(self.ocov_matrix)))) # Constant not needed
         if(sum(self.likeli)<=0):
             print("Likelihood went to 0 | Filter failed")
@@ -216,7 +217,7 @@ class ArucoParticleFilterRemote():
         self.filt_pose.pose.pose.position.y = np.average(self.particles[:,1])
         # self.filt_pose.pose.pose.position.z = 0
         # Angular orientations
-        quat = tf.transformations.quaternion_from_euler((0,0,np.average(self.particles[:,2])))
+        quat = tf.transformations.quaternion_from_euler(0,0,np.average(self.particles[:,2]))
         self.filt_pose.pose.pose.orientation.x = quat[0] 
         self.filt_pose.pose.pose.orientation.y = quat[1] 
         self.filt_pose.pose.pose.orientation.z = quat[2] 
@@ -233,7 +234,7 @@ class ArucoParticleFilterRemote():
                         0.0,         0.0,    99999,  0.0,   0.0,    0.0,
                         0.0,         0.0,     0.0,  99999,  0.0,    0.0,
                         0.0,         0.0,     0.0,   0.0,  99999,   0.0,
-                        0.0          0.0,     0.0,   0.0,   0.0, covmat[2,2]]
+                        0.0,         0.0,     0.0,   0.0,   0.0, covmat[2,2]]
         return cov_list
     
     # Function to build 3x3 process and observation covariance matrices

@@ -9,12 +9,13 @@
   <!-- <include file="$(find svea_sensors)/launch/lli_ctrl_to_twist.launch" /> -->
   <!--include file="$(find svea_sensors)/launch/aruco_robot_localization_ekf_external.launch" /-->
   <!--include file="$(find svea)/launch/aruco_tf.launch" /-->
+  <include file="$(find svea_sensors)/launch/ctrl_bicycle.launch" />
 
 
   <!-- -->
-  <arg name="pose_observation_topic"          default="aruco_base_link_pose"/>
+  <arg name="pose_observation_topic"          default="/base_link"/>
   <arg name="prediction_update_topic"         default="/cmd_odom"/>
-  <arg name="particle_filtered_pose_topic"    default="pf_pose"/>
+  <arg name="particle_filtered_pose_topic"    default="/pf_pose"/>
   <arg name="particle_count"                  default="5000"/>
   <arg name="initial_estimate_covariance"     default="1.5"/>
   <arg name="linear_observation_covariance"   default=".002"/>
@@ -34,7 +35,7 @@
   <arg name="ang_cov_aruco" default="0.001"/> -->
    
 
-  <node type="particle_filter_aruco_remote.py" pkg="svea" name="particle_filter_aruco_remote" output="$(arg output)">
+  <node type="pf_aruco_slam.py" pkg="svea" name="pf_aruco_slam" output="$(arg output)">
     <param name="pose_observation_topic"                          value="$(arg pose_observation_topic)" />
     <param name="prediction_update_topic"                         value="$(arg prediction_update_topic)" />
     <param name="particle_filtered_pose_topic"                    value="$(arg particle_filtered_pose_topic)" />

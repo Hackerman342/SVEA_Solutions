@@ -1,45 +1,55 @@
 
 <launch>
 
-  <!-- Set initilization or landmark mode. Only one can be set to true -->
-  <arg name="init_mode" default="True"/>
-  <arg name="landmark_mode" default="False"/>
-  <!-- Set topic name of pose to read. If empty, origin will be used -->
-  <!--arg name="vehicle_pose_topic" default="test_camera"/-->
-  <arg name="vehicle_odom_topic" default="test_camera/odom"/>
-  <arg name="estimated_pose_topic" default="est_pose"/>  
-  <arg name="map_frame" default="map"/>
-  <arg name="camera_frame" default="test_camera"/>
-  <!--arg name="camera_frame" default="cam0/arducam"/-->
+  <!-- Set topic name of camera pose to read -->
+  <arg name="camera_frame"                  default="logicam_stat"/>
+  <!--arg name="camera_frame"               default="cam0/arducam"/-->
+  <arg name="use_qualisys"                  default="True"/>
 
-  <arg name="output" default="screen"/>
-  <arg name="vehicle_to_cam_tf" default = "?????"/>
-  <arg name="convergence_criteria" default="5"/>
-  <arg name="fiducial_pose_topic" default="/fiducial_transforms"/>  
-  <!--arg name="fiducial_vertices_topic" default="fiducial_vertices"/-->  
-  
-
+  <!-- Other parameters -->
+  <!-- <arg name="map_frame"                     default="map"/> -->
+  <arg name="map_frame"                     default="qualisys"/>
+  <arg name="fiducial_pose_topic"           default="/fiducial_transforms"/>  
+  <arg name="convergence_criteria"          default="15"/>
+  <arg name="output"                        default="screen"/>
 
 
   <node type="aruco_map_init.py" pkg="svea" name="aruco_map_init" output="$(arg output)">
-    <!-- show hidden files to find map file -->
-    <param name="map_file" value="$(env HOME)/.ros/slam/map.txt" />
-    <param name="map_frame" value="$(arg map_frame)" />
-    <param name="camera_frame" value="$(arg camera_frame)" />
-    <param name="init_mode" type="bool" value="$(arg init_mode)" />
-    <param name="landmark_mode" type="bool" value="$(arg landmark_mode)" />
-    <!--param name="vehicle_pose_topic" value="$(arg vehicle_pose_topic)" /-->
-    <param name="vehicle_odom_topic" value="$(arg vehicle_odom_topic)" />
-    <param name="estimated_pose_topic" value="$(arg estimated_pose_topic)" />
-    <param name="fiducial_pose_topic" value="$(arg fiducial_pose_topic)" />
-    <!-- param name="fiducial_vertices_topic" value="$(arg fiducial_vertices_topic)" /-->
-    <param name="convergence_criteria" value="$(arg convergence_criteria)" />
-
+    <param name="map_file"                                value="$(env HOME)/.ros/slam/map.txt" />  <!-- show hidden files to find map file -->
+    <param name="camera_frame"                            value="$(arg camera_frame)" />
+    <param name="map_frame"                               value="$(arg map_frame)" />
+    <param name="fiducial_pose_topic"                     value="$(arg fiducial_pose_topic)" />
+    <param name="convergence_criteria"    type="int"      value="$(arg convergence_criteria)" />
   </node>
 
+  <!-- Other launch files to include (qualisys, camera, aruco_detect-->
+  <!-- <include file="$(find qualisys)/launch/qualisys.launch" />
+  <include file="$(find video_stream_opencv)/launch/camera.launch" />
+  <include file="$(find aruco_detect)/launch/aruco_detect.launch" /> -->
 
-  <!--node pkg="tf" type="static_transform_publisher" name="cam_to_car_static_tf" args=".1 0 0 0 0 0 $(arg vehicle_odom_topic) $(arg camera_frame) 100" /-->
+  <!-- Static transforms -->
 
+  <!-- Static transform from camera plate to logicam -->
+  <!-- <node pkg="tf2_ros"  type="static_transform_publisher"   name="logicam_to_plate"   args="0.2 0 0 -1.57 0 -1.57 logicam_plate logicam_stat" /> -->
+  <!-- <node pkg="tf2_ros"  type="static_transform_publisher"   name="logicam_to_qualisys"   args="0.2 0 0 -1.57 0 -1.57 qualisys logicam_stat" /> -->
+  <!-- Static transform from SVEA0 to logicam -->
+  <node pkg="tf2_ros"     type="static_transform_publisher"   name="logicam_to_SVEA0"   args="0.2 -0.04 0 -1.57 0 -1.57 SVEA0 logicam_stat" />
+  <!-- Static transform from qualisys to map (for RVIZ) -->
+  <node pkg="tf2_ros"     type="static_transform_publisher"   name="make_map"           args="0 0 0 0 0 0 1 qualisys map" />
+
+
+  <!-- <arg name="estimated_pose_topic"         default="est_pose"/>   -->
+  <!--arg name="fiducial_vertices_topic"        default="fiducial_vertices"/-->  
+  <!--arg name="vehicle_odom_topic"             default="test_camera/odom"/-->
+  <!--arg name="landmark_mode"                  default="False"/-->
+  <!--arg name="init_mode"                      default="True"/-->
+
+  <!-- <param name="init_mode"               type="bool"     value="$(arg init_mode)" /> -->
+  <!-- <param name="landmark_mode"           type="bool"     value="$(arg landmark_mode)" /> -->
+  <!-- <param name="vehicle_pose_topic"                      value="$(arg vehicle_pose_topic)" /> -->
+  <!-- <param name="vehicle_odom_topic"                      value="$(arg vehicle_odom_topic)" /> -->
+  <!-- <param name="estimated_pose_topic"                    value="$(arg estimated_pose_topic)" /> -->
+  <!-- <param name="fiducial_vertices_topic"                 value="$(arg fiducial_vertices_topic)" /> -->
 
 </launch>
 
