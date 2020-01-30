@@ -33,9 +33,15 @@ class ArucoParticleFilterRemote():
     def __init__(self):
         ## Pull necessary ROS parameters from launch file:
 
-        # Read pose observation topic (pose estimated from aruco detection) 
-        param = rospy.search_param("pose_observation_topic")
-        self.pose_obs_top = rospy.get_param(param)
+        # # Read pose observation topic (pose estimated from aruco detection) 
+        # param = rospy.search_param("pose_observation_topic")
+        # self.pose_obs_top = rospy.get_param(param)
+        # Read pose observation frame (tf pose estimated from aruco detection) 
+        param = rospy.search_param("pose_observation_frame")
+        self.pose_obs_frame = rospy.get_param(param)        
+        # Read map frame
+        param = rospy.search_param("map_frame")
+        self.map_frame = rospy.get_param(param)
         # Read prediction update topic (EKF filtered odometry from IMU and ctrl inputs) 
         param = rospy.search_param("prediction_update_topic")
         self.pred_up_top = rospy.get_param(param)
@@ -73,7 +79,13 @@ class ArucoParticleFilterRemote():
         self.likeli = np.zeros((self.pc,1))
 
         # Establish subscription to observation pose
-        rospy.Subscriber(self.pose_obs_top, PoseWithCovarianceStamped, self.obs_pose_callback)
+        #rospy.Subscriber(self.pose_obs_top, PoseWithCovarianceStamped, self.obs_pose_callback)
+        # Establish tf listener for base_link frame (estimated from fiducial_slam)
+
+        # Initialize listener for estimated pose of markers in map frame
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
+
         # Establish subscription to prediction update odometry
         rospy.Subscriber(self.pred_up_top, Odometry, self.pred_up_callback)
         # Delay briefly to allow subscribers to find messages
@@ -100,6 +112,7 @@ class ArucoParticleFilterRemote():
 
     # Function to call all functions and run particle filter
     def run_pf(self):
+        #rate = rospy.Rate(100)
         while not rospy.is_shutdown():            
             # Only predict when a filtered odometry (IMU and ctrl) comes in
             if self.pred_odom != None and np.absolute(self.pred_odom.twist.twist.linear.x) > 0.01:
@@ -109,7 +122,8 @@ class ArucoParticleFilterRemote():
                     self.predict()
                 # Update previous timestamp for comparison to next
                 self.old_time = self.time
-
+            # Unpack tf if available
+            self.tf_unpack()
             # Only update observation when an aruco-based pose measurement comes in
             if self.obs_pose != None and self.obs_pose != self.obs_pose_old:
                 self.obs_update()
@@ -119,7 +133,8 @@ class ArucoParticleFilterRemote():
                 self.obs_pose_old = self.obs_pose
             
             self.particle_publish()
-    
+            #rate.sleep()
+
     # Function for process/prediction step 
     def predict(self):
         # Use covariance to calculate gaussian noise for prediction
@@ -146,8 +161,24 @@ class ArucoParticleFilterRemote():
         # Update old theta for comparison
         # self.old_theta = theta
 
+    def tf_unpack(self):
+        # tf listener | Transform into map coords
+        trans = None
+        self.obs_pose = None
+        self.obs_pose = PoseWithCovarianceStamped()
+        try:
+            trans = self.tfBuffer.lookup_transform(self.map_frame, self.pose_obs_frame, rospy.Time(0), rospy.Duration(1.0))
+            self.obs_pose.pose.pose.position = trans.transform.translation
+            self.obs_pose.pose.pose.orientation = trans.transform.rotation
+            #print("trans: ", trans)
+        except:
+            rospy.loginfo('Failure of lookup transfrom from fiducial marker to map')    
+        
+
+
     # Function for observation update
     def obs_update(self):
+
         # Unpack observation pose estimates
         x_obs  = self.obs_pose.pose.pose.position.x
         y_obs  = self.obs_pose.pose.pose.position.y
@@ -164,7 +195,7 @@ class ArucoParticleFilterRemote():
 
         # Calculate likelihood
         self.likeli = np.exp(-0.5*np.sum(np.square(self.innov).dot(np.linalg.inv(self.ocov_matrix)), axis=1))
-        print(self.likeli)
+        print(sum(self.likeli))
         #*(1/(2*np.pi*np.sqrt(np.linalg.det(self.ocov_matrix)))) # Constant not needed
         if(sum(self.likeli)<=0):
             print("Likelihood went to 0 | Filter failed")
@@ -210,7 +241,8 @@ class ArucoParticleFilterRemote():
 
     ##### Support Functions #####
 
-    # Function to publish average of particle poses
+    # Function to publish average of particle posesifconfig
+
     def particle_publish(self):
         # Linear positions
         self.filt_pose.pose.pose.position.x = np.average(self.particles[:,0])
@@ -228,13 +260,15 @@ class ArucoParticleFilterRemote():
 
     # Function to calculate covariance of 3x3 numpy array and return as float64[36] for Odometry msg
     def cov_calc(self):
-        covmat = np.cov(self.particles[:,[0,1,2]])
-        cov_list = [covmat[0,0],     0.0,     0.0,   0.0,   0.0,    0.0,
-                        0.0,     covmat[1,1], 0.0,   0.0,   0.0,    0.0,
-                        0.0,         0.0,    99999,  0.0,   0.0,    0.0,
-                        0.0,         0.0,     0.0,  99999,  0.0,    0.0,
-                        0.0,         0.0,     0.0,   0.0,  99999,   0.0,
-                        0.0,         0.0,     0.0,   0.0,   0.0, covmat[2,2]]
+        covx = np.cov(self.particles[:,0])
+        covy = np.cov(self.particles[:,1])
+        covyaw = np.cov(self.particles[:,2])
+        cov_list = [covx,     0.0,        0.0,   0.0,   0.0,    0.0,
+                    0.0,     covy,        0.0,   0.0,   0.0,    0.0,
+                    0.0,         0.0,    99999,  0.0,   0.0,    0.0,
+                    0.0,         0.0,     0.0,  99999,  0.0,    0.0,
+                    0.0,         0.0,     0.0,   0.0,  99999,   0.0,
+                    0.0,         0.0,     0.0,   0.0,   0.0, covyaw]
         return cov_list
     
     # Function to build 3x3 process and observation covariance matrices

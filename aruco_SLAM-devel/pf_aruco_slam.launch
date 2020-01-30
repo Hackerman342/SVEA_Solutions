@@ -13,13 +13,15 @@
 
 
   <!-- -->
-  <arg name="pose_observation_topic"          default="/base_link"/>
+  <!-- <arg name="pose_observation_topic"          default="/base_link"/> -->
+  <arg name="pose_observation_frame"          default="base_link"/>
+  <arg name="map_frame"                       default="qualisys"/>
   <arg name="prediction_update_topic"         default="/cmd_odom"/>
   <arg name="particle_filtered_pose_topic"    default="/pf_pose"/>
-  <arg name="particle_count"                  default="5000"/>
+  <arg name="particle_count"                  default="500"/>
   <arg name="initial_estimate_covariance"     default="1.5"/>
-  <arg name="linear_observation_covariance"   default=".002"/>
-  <arg name="angular_observation_covariance"  default=".001"/>
+  <arg name="linear_observation_covariance"   default=".02"/>
+  <arg name="angular_observation_covariance"  default=".01"/>
   <!-- Should process covariances be omitted and use values from message ??? -->
   <arg name="linear_process_covariance"       default=".00015"/>
   <arg name="angular_process_covariance"      default=".0001"/>  
@@ -36,7 +38,9 @@
    
 
   <node type="pf_aruco_slam.py" pkg="svea" name="pf_aruco_slam" output="$(arg output)">
-    <param name="pose_observation_topic"                          value="$(arg pose_observation_topic)" />
+    <!-- <param name="pose_observation_topic"                          value="$(arg pose_observation_topic)" /> -->
+    <param name="pose_observation_frame"                          value="$(arg pose_observation_frame)" />
+    <param name="map_frame"                                       value="$(arg map_frame)" />
     <param name="prediction_update_topic"                         value="$(arg prediction_update_topic)" />
     <param name="particle_filtered_pose_topic"                    value="$(arg particle_filtered_pose_topic)" />
     <param name="particle_count"                  type= "int"     value="$(arg particle_count)" />

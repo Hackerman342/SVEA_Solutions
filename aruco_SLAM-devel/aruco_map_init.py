@@ -149,6 +149,7 @@ class ArucoMapInit():
             rot = self.map_fid_pose.transform.rotation
             (r, p, y) = euler_from_quaternion([rot.x, rot.y, rot.z, rot.w])
             (r, p, y) = (r*180/np.pi, p*180/np.pi, y*180/np.pi)
+            ### Seems like this needs to be edited again if initiating w/o qualisys
             self.fid_pose_arr = np.array([fid, lin.z, lin.y, -1*lin.x+.22, r-90, y+90, p-90, 0, 1])
             #self.fid_pose_arr = np.array([fid, lin.z, lin.y, -1*lin.x+.22, r-90, y+90, p-90, 0, 1])
             self.fid_pose_arr.astype(float)
@@ -163,6 +164,7 @@ class ArucoMapInit():
         while (count < self.convergence_criteria):
             #print(count)
             self.new_fidtrans_to_array()
+            #self.old_fidtrans_to_array()
             print(self.fid_pose_arr)
             if self.fid_pose_arr is not None:
                 print(self.fid_pose_arr[0])
