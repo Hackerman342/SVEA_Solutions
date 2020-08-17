@@ -1,0 +1,51 @@
+<launch>
+  <!--
+    Launch stupid_robot.launch on the vehicle before this launch file
+    This can be run on the car or remotely through a ROSMASTER connection
+   -->
+
+  <!-- Launch RVIZ -->
+  <node pkg="rviz" type="rviz" name="$(anon rviz)" args="-d $(find svea_aruco)/resources/rviz/fiducials.rviz"/>
+  <!-- <node pkg="rviz" type="rviz" name="$(anon rviz)" args="-d $(find svea_aruco)/resources/rviz/stupid_robot.rviz"/> -->
+
+  <!-- Launch occupancy grid publishers (instead of only mrpt-->
+  <include file="$(find svea_aruco)/launch/map_mods.launch" />
+
+
+  <!-- Define PF args -->
+  <arg name="map_frame"                       default="map"/>
+  <arg name="pf_pose_frame"                   default="pf_pose_tf"/>
+  <arg name="prediction_update_topic"         default="/odometry/filtered"/>
+  <arg name="pf_pose_topic"                   default="/pf_pose"/>
+  <arg name="pose_array_topic"                default="/pf_pose_array"/>
+
+  <arg name="initial_pose_estimate"           default="[0.2, 0.3, -0.5]"/> <!-- [x, y, yaw (rad)]-->
+
+  <arg name="particle_count"                  default="250"/>
+  <arg name="initial_estimate_covariance"     default="1.5"/>
+  <arg name="linear_observation_covariance"   default=".01"/>
+  <arg name="angular_observation_covariance"  default=".005"/>
+  <arg name="linear_process_covariance"       default=".000075"/>
+  <arg name="angular_process_covariance"      default=".0005"/>
+  <arg name="output"                          default="screen"/>
+
+  <arg name="map_file"                        default="$(find svea)/resources/maps/demo_aruco_map.txt"/>
+
+  <node type="pf_aruco_slam.py" pkg="svea_aruco" name="pf_aruco_slam" output="$(arg output)">
+    <param name="map_frame"                                       value="$(arg map_frame)" />
+    <param name="map_file"                                        value="$(arg map_file)" />
+    <param name="pf_pose_frame"                                   value="$(arg pf_pose_frame)" />
+    <param name="prediction_update_topic"                         value="$(arg prediction_update_topic)" />
+    <param name="pf_pose_topic"                                   value="$(arg pf_pose_topic)" />
+    <param name="pose_array_topic"                                value="$(arg pose_array_topic)" />
+    <param name="initial_pose_estimate"                           value="$(arg initial_pose_estimate)" />
+    <param name="particle_count"                  type= "int"     value="$(arg particle_count)" />
+    <param name="initial_estimate_covariance"     type= "double"  value="$(arg initial_estimate_covariance)" />
+    <param name="linear_process_covariance"       type= "double"  value="$(arg linear_process_covariance)" />
+    <param name="angular_process_covariance"      type= "double"  value="$(arg angular_process_covariance)" />
+    <param name="linear_observation_covariance"   type= "double"  value="$(arg linear_observation_covariance)" />
+    <param name="angular_observation_covariance"  type= "double"  value="$(arg angular_observation_covariance)" />
+
+  </node>
+
+</launch>
