@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+import sys
+import os
+import rospy
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+dirname = os.path.dirname(__file__)
+svea = os.path.join(dirname, '../')
+sys.path.append(os.path.abspath(svea))
+
+from geometry_msgs.msg import PolygonStamped, PointStamped, PoseStamped, Twist
+from nav_msgs.msg import Path
+from controllers.control_interfaces import ControlInterface
+
+
+class Test():
+    def main(self):
+
+        # Pull ROS parameters
+        param = rospy.search_param('SVEA_id')
+        vehicle_name = rospy.get_param(param)
+        param = rospy.search_param('twist_msg_topic')
+        twist_topic = rospy.get_param(param)
+
+        # Initialize control interface
+        self.ctrl_interface = ControlInterface(vehicle_name).start()
+        rate = 10
+        r = rospy.Rate(rate)
+        while not self.ctrl_interface.is_ready and not rospy.is_shutdown():
+            rospy.sleep(0.1)
+        rospy.loginfo(self.ctrl_interface)
+        
+        # Subscribe to Twist msg | converting and sending controls done in callback
+        rospy.Subscriber(twist_topic, Twist, self.twist_cb)
+        
+        while not rospy.is_shutdown():
+            rospy.spin()
+
+
+    def twist_cb(self, msg):
+        # Unpack Twist msg
+        yaw_rate = msg.angular.z
+        vel = msg.linear.x
+        # Physical property of SVEAs
+        wheelbase = 0.32      
+        # Calculate steering angle (avoiding math errors)
+        if vel != 0:
+            try:
+                steer_angle = math.atan2((yaw_rate*wheelbase/vel),math.sqrt(1 - (yaw_rate*(wheelbase/2)/vel)**2))
+            except:
+                steer_angle = 0
+        else:
+            steer_angle = 0
+        # Max steering angle [-pi/4, pi/4]
+        if abs(steer_angle) > math.pi/4:
+            steer_angle = math.copysign((math.pi/4),steer_angle)
+        # Send commands to SVEA control interface
+        self.ctrl_interface.send_control(steer_angle, vel, transmission=0)        
+    
+if __name__ == '__main__': 
+    
+    rospy.init_node('twist_controller')
+
+    test = Test()
+    test.main()

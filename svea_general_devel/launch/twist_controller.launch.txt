@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+
+
+    <arg name="SVEA_id"                     default="SVEA5" />  
+    <arg name="twist_msg_topic"             default="/cmd_twist" />  
+
+    <node pkg="rosserial_python" type="serial_node.py" name="serial_node">
+        <!-- <param name="port" value="/dev/arduinoPWM"/> -->
+        <param name="port"                  value="/dev/ttyACM0"/>
+        <param name ="baud"                 value="250000" />
+        <remap from="/lli/ctrl_request"     to="/$(arg SVEA_id)/lli/ctrl_request" />
+        <remap from="/lli/ctrl_actuated"    to="/$(arg SVEA_id)/lli/ctrl_actuated" />
+    </node>
+
+    
+    <node pkg="svea" type="twist_controller.py" name="twist_controller" output="screen">
+        <param name="twist_msg_topic"           value="$(arg twist_msg_topic)" />
+        <param name="SVEA_id"                   value="$(arg SVEA_id)" />
+    </node>
+
+</launch>

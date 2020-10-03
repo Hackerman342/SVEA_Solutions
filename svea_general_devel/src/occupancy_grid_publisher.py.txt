@@ -1,0 +1,181 @@
+#!/usr/bin/env python 
+"""
+Module for publishing an occupancy grid for SVEAs in lab environment
+NOTE: This node does not use Lidar
+Free space is initiated by an open area parameter with walls placed around it
+Other occupied space comes from hard coded and/or published poses of objects/SVEA vehicles
+i.e. qualisys sees pose of another vehicle in the arena and adds it to the occupied space
+Developed for: KTH Smart Mobility Lab
+Developed by: Kyle Coble
+""" 
+# Standard dependencies
+import sys
+import os
+import math
+import rospy
+import numpy as np
+import tf
+import tf2_ros
+import tf_conversions
+
+from nav_msgs.msg import Odometry, OccupancyGrid, MapMetaData
+from geometry_msgs.msg import Pose, TransformStamped
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
+
+#import geometry_msgs.msg
+#import fiducial_msgs.msg
+#from fiducial_msgs.msg import FiducialTransformArray, FiducialArray
+#from geometry_msgs.msg import Pose, PoseWithCovariance, TransformStamped, PoseStamped 
+#from geometry_msgs.msg import Pose, PoseWithCovariance, TransformStamped, PoseStamped 
+
+class OccupancyGridPublisher():
+
+    def __init__(self):
+        ## Pull necessary ROS parameters from launch file:
+
+        # param = rospy.search_param("pose_observation_topic")
+        # self.pose_obs_top = rospy.get_param(param)
+        self.map_topic = '/og_map'
+        self.map_frame = 'map'
+        self.map_resolution = 0.1 # [m/cell]
+        self.map_width= 80 # [cells | x-dim]
+        self.map_height = 75 # [cells | y-dim]
+        self.map_origin = [-4, -3, 0] # [x0, y0, yaw0]
+
+        self.map_pub_rate= rospy.Rate(1) # [hz]
+
+
+        # Initialize callback variables
+        # self.obs_pose = None
+
+        # Initialize class variables
+        # self.time = None
+
+        # Establish subscription to ______________
+        #rospy.Subscriber(self.pose_obs_top, PoseWithCovarianceStamped, self.obs_pose_callback)
+
+        # Initialize tf buffer and listener
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
+
+
+        # Initialize publisher for occupancy grid
+        self.gridpub = rospy.Publisher(self.map_topic, OccupancyGrid, queue_size=10)
+        
+        # Initialize occupancy grid details
+        self.occupancy_grid = OccupancyGrid()
+        self.occupancy_grid.header.frame_id = self.map_frame
+        self.occupancy_grid.info.resolution = self.map_resolution
+        self.occupancy_grid.info.width      = self.map_width
+        self.occupancy_grid.info.height     = self.map_height
+        
+        # Initialize Occupancy grid origin
+        self.occupancy_grid.info.origin.position.x = self.map_origin[0]
+        self.occupancy_grid.info.origin.position.y = self.map_origin[1]
+        quat = quaternion_from_euler(0, 0, self.map_origin[2])
+        self.occupancy_grid.info.origin.orientation.x = quat[0]
+        self.occupancy_grid.info.origin.orientation.y = quat[1]
+        self.occupancy_grid.info.origin.orientation.z = quat[2]
+        self.occupancy_grid.info.origin.orientation.w = quat[3]
+        
+        # Initialize occupancy grid cells
+        self.grid_array = np.zeros((self.map_width,self.map_height))
+        self.grid_array[:,0] = 100 # Right wall
+        self.grid_array[:,-1] = 100 # Left wall
+        self.grid_array[0, :] = 100 # Bottom wall
+        self.grid_array[-1,:] = 100 # Top wall
+
+        # Transpose, flatten, and convert map to list
+        trans = self.grid_array.transpose()
+        flat = trans.flatten()
+        list = flat.tolist()
+        self.occupancy_grid.data = list
+ 
+        
+        # time
+        
+        
+        
+
+
+
+
+
+
+
+
+
+
+
+
+    ##### Primary particle filter functions #####
+
+    # Function to call all functions and run particle filter
+    def run(self):
+        
+        while not rospy.is_shutdown():
+
+
+            
+
+            # Publish map with current timestamp
+            self.occupancy_grid.header.stamp = rospy.Time.now()
+            self.occupancy_grid.info.map_load_time = self.occupancy_grid.header.stamp
+            self.gridpub.publish(self.occupancy_grid)
+            
+            self.map_pub_rate.sleep()            
+            
+
+
+
+    # def tf_unpack(self):
+    #     # tf listener | Transform into map coords
+    #     trans = None
+    #     # self.obs_pose = None
+    #     self.obs_pose = PoseWithCovarianceStamped()
+    #     try:
+    #         trans = self.tfBuffer.lookup_transform(self.map_frame, self.pose_obs_frame, rospy.Time(0), rospy.Duration(1.0))
+    #         self.obs_pose.pose.pose.position = trans.transform.translation
+    #         self.obs_pose.pose.pose.orientation = trans.transform.rotation
+    #         #print("trans: ", trans)
+    #     except:
+    #         rospy.loginfo('Failure of lookup transfrom from fiducial marker to map')    
+        
+
+    ############## Support Functions ##############
+
+    # # Function to publish average of particle poses 
+    # def pose_publish(self):
+    #     # Linear positions
+    #     self.filt_pose.pose.pose.position.x = np.average(self.particles[:,0])
+    #     self.filt_pose.pose.pose.position.y = np.average(self.particles[:,1])
+    #     # self.filt_pose.pose.pose.position.z = 0
+    #     # Angular orientations
+    #     quat = tf.transformations.quaternion_from_euler(0,0,np.average(self.particles[:,2]))
+    #     self.filt_pose.pose.pose.orientation.x = quat[0] 
+    #     self.filt_pose.pose.pose.orientation.y = quat[1] 
+    #     self.filt_pose.pose.pose.orientation.z = quat[2] 
+    #     self.filt_pose.pose.pose.orientation.w = quat[3] 
+    #     # Covariance from particle set as float64[36] list
+    #     self.filt_pose.pose.covariance = self.cov_calc() 
+    #     # Publish posestamped message of pose
+    #     self.filt_pose.header.stamp = rospy.Time.now()
+    #     self.posepub.publish(self.filt_pose)
+
+
+    # # Callback function for observation pose subscription (from aruco_detect)
+    # def obs_pose_callback(self, obs_pose_msg):
+    #     self.obs_pose = obs_pose_msg
+
+
+if __name__ == '__main__':
+    # Initialize ROS node
+    rospy.init_node('occupancy_grid_publisher', anonymous=True)
+    rospy.loginfo("Successful initilization of node")
+    
+    # Initiate occupancy grid class
+    og = OccupancyGridPublisher()
+    rospy.loginfo("OccupancyGridPublisher class successfully created")
+    
+    # Run node
+    og.run()
